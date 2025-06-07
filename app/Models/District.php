@@ -26,7 +26,6 @@ class District extends Model
         'administrative_level',
         'parent_district_id',
         'is_active',
-        'parent_district_id_id',
     ];
 
     /**
@@ -39,21 +38,20 @@ class District extends Model
         return [
             'id' => 'integer',
             'polygon_coordinates' => 'array',
-            'area_hectares' => 'decimal',
+            'area_hectares' => 'decimal:2',
             'parent_district_id' => 'integer',
             'is_active' => 'boolean',
-            'parent_district_id_id' => 'integer',
         ];
     }
 
     public function parentDistrict(): BelongsTo
     {
-        return $this->belongsTo(District::class);
+        return $this->belongsTo(District::class, 'parent_district_id');
     }
 
-    public function parentDistricts(): HasMany
+    public function childDistricts(): HasMany
     {
-        return $this->hasMany(District::class);
+        return $this->hasMany(District::class, 'parent_district_id');
     }
 
     public function productionDatas(): HasMany

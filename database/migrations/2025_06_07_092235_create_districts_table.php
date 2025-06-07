@@ -19,12 +19,11 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->json('polygon_coordinates');
             $table->enum('security_level', ["low","medium","high","critical"]);
-            $table->integer('population');
-            $table->decimal('area_hectares');
+            $table->bigInteger('population');
+            $table->decimal('area_hectares', 15, 2);
             $table->enum('administrative_level', ["province","regency","district","village"]);
             $table->foreignId('parent_district_id')->nullable()->constrained('districts');
             $table->boolean('is_active')->default(true);
-            $table->foreignId('parent_district_id_id');
             $table->timestamps();
         });
 
