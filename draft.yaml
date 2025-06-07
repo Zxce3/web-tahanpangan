@@ -10,22 +10,15 @@ models:
     last_login: datetime nullable
 
     relationships:
-      belongsToMany: Role, Permission
       hasMany: ActivityLog, AlertSubscription
 
   Role:
     name: string
     guard_name: string
 
-    relationships:
-      belongsToMany: User, Permission
-
   Permission:
     name: string
     guard_name: string
-
-    relationships:
-      belongsToMany: User, Role
 
   District:
     name: string
