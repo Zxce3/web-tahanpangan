@@ -1,0 +1,142 @@
+models:
+  User:
+    name: string
+    email: string unique
+    email_verified_at: nullable timestamp
+    password: string
+    remember_token: string:100 nullable
+    district_permissions: json nullable
+    is_active: boolean default:true
+    last_login: datetime nullable
+
+    relationships:
+      belongsToMany: Role, Permission
+      hasMany: ActivityLog, AlertSubscription
+
+  Role:
+    name: string
+    guard_name: string
+
+    relationships:
+      belongsToMany: User, Permission
+
+  Permission:
+    name: string
+    guard_name: string
+
+    relationships:
+      belongsToMany: User, Role
+
+  District:
+    name: string
+    code: string unique
+    polygon_coordinates: json
+    security_level: enum:low,medium,high,critical
+    population: integer
+    area_hectares: decimal
+    administrative_level: enum:province,regency,district,village
+    parent_district_id: id foreign:districts nullable
+    is_active: boolean default:true
+
+    relationships:
+      belongsTo: District:parent_district_id
+      hasMany: District:parent_district_id, ProductionData, CommodityPrice, SecurityLevelHistory
+
+  Commodity:
+    name: string
+    category: enum:rice,corn,soybean,vegetables,fruits,livestock
+    unit: string
+    is_staple: boolean default:false
+
+    relationships:
+      hasMany: ProductionData, CommodityPrice, PriceAlert
+
+  ProductionData:
+    district_id: id foreign:districts
+    commodity_id: id foreign:commodities
+    production_volume: decimal
+    harvest_area: decimal nullable
+    yield_per_hectare: decimal nullable
+    month: integer
+    year: integer
+    data_source: enum:survey,estimation,report
+    verified_at: datetime nullable
+    verified_by: id foreign:users nullable
+
+    relationships:
+      belongsTo: User:verified_by
+
+  CommodityPrice:
+    district_id: id foreign:districts
+    commodity_id: id foreign:commodities
+    price: decimal
+    market_type: enum:producer,wholesale,retail
+    recorded_date: date
+    data_source: string
+
+  SecurityLevelHistory:
+    district_id: id foreign:districts
+    previous_level: enum:low,medium,high,critical
+    new_level: enum:low,medium,high,critical
+    change_reason: text
+    changed_by: id foreign:users
+    changed_at: timestamp
+
+    relationships:
+      belongsTo: User:changed_by
+
+  Alert:
+    type: enum:low_production,price_spike,security_change
+    title: string
+    message: text
+    district_id: id foreign:districts nullable
+    commodity_id: id foreign:commodities nullable
+    severity: enum:info,warning,critical
+    is_resolved: boolean default:false
+    resolved_at: datetime nullable
+
+    relationships:
+      hasMany: AlertSubscription
+
+  AlertSubscription:
+    user_id: id foreign:users
+    alert_id: id foreign:alerts
+    notification_method: enum:email,sms,in_app
+    is_read: boolean default:false
+    sent_at: datetime nullable
+
+  ActivityLog:
+    user_id: id foreign:users
+    action: string
+    model_type: string
+    model_id: integer
+    old_values: json nullable
+    new_values: json nullable
+    ip_address: string
+    user_agent: string
+
+  PriceAlert:
+    commodity_id: id foreign:commodities
+    district_id: id foreign:districts nullable
+    threshold_price: decimal
+    alert_type: enum:above,below
+    is_active: boolean default:true
+    created_by: id foreign:users
+
+    relationships:
+      belongsTo: User:created_by
+
+seeders: UserSeeder, RoleSeeder, PermissionSeeder, DefaultUserRoleSeeder, DistrictSeeder, CommoditySeeder, ProductionDataSeeder, CommodityPriceSeeder
+
+factories: UserFactory, DistrictFactory, CommodityFactory, ProductionDataFactory, CommodityPriceFactory, AlertFactory
+
+tests:
+  feature:
+    - AuthenticationTest
+    - MapControllerTest
+    - ProductionControllerTest
+    - AlertControllerTest
+  unit:
+    - UserTest
+    - DistrictTest
+    - ProductionDataTest
