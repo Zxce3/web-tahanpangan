@@ -12,14 +12,6 @@ models:
     relationships:
       hasMany: ActivityLog, AlertSubscription
 
-  Role:
-    name: string
-    guard_name: string
-
-  Permission:
-    name: string
-    guard_name: string
-
   District:
     name: string
     code: string unique
@@ -119,7 +111,7 @@ models:
     relationships:
       belongsTo: User:created_by
 
-seeders: UserSeeder, RoleSeeder, PermissionSeeder, DefaultUserRoleSeeder, DistrictSeeder, CommoditySeeder, ProductionDataSeeder, CommodityPriceSeeder
+seeders: UserSeeder, DistrictSeeder, CommoditySeeder, ProductionDataSeeder, CommodityPriceSeeder
 
 factories: UserFactory, DistrictFactory, CommodityFactory, ProductionDataFactory, CommodityPriceFactory, AlertFactory
 
