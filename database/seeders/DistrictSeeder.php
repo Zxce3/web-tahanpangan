@@ -6,9 +6,37 @@ use App\Models\District;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class DistrictSeeder extends Seeder
 {
+    private array $usedCodes = [];
+    private array $availableProvinceFiles = [];
+    private array $availableRegencyFiles = [];
+    private array $availableDistrictFiles = [];
+
+    /**
+     * Get province name for a given regency
+     */
+    private function getProvinceForRegency(string $regencyName): string
+    {
+        // Create a mapping from the JSON data
+        static $regencyToProvince = [];
+
+        if (empty($regencyToProvince)) {
+            $jsonPath = resource_path('maps/papua_structured_data/papua_districts_list.json');
+            if (File::exists($jsonPath)) {
+                $data = json_decode(File::get($jsonPath), true);
+                foreach ($data as $item) {
+                    $regencyToProvince[$item['regency']] = $item['province'];
+                }
+            }
+        }
+
+        return $regencyToProvince[$regencyName] ?? 'Papua';
+    }
+
     /**
      * Run the database seeds.
      */
@@ -19,527 +47,698 @@ class DistrictSeeder extends Seeder
         District::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // Create Papua Province first (after 2022 reorganization)
-        $papuaProvince = District::create([
-            'name' => 'Papua',
-            'code' => 'ID-PA',
-            'polygon_coordinates' => [
-                // Papua province boundary coordinates
-                [
-                    [135.0, -1.0],  // Northwest
-                    [141.0, -1.0],  // Northeast
-                    [141.0, -4.0],  // Southeast
-                    [135.0, -4.0],  // Southwest
-                    [135.0, -1.0]   // Close polygon
-                ]
-            ],
-            'security_level' => 'medium',
-            'population' => 1060550, // Updated population after reorganization
-            'area_hectares' => 9950000.0, // Approximate area in hectares
-            'administrative_level' => 'province',
-            'parent_district_id' => null,
-            'is_active' => true,
-        ]);
+        // Reset used codes
+        $this->usedCodes = [];
 
-        // Create Regencies in Papua Province (real data from Wikipedia)
-        $regencies = [
-            [
-                'name' => 'Biak Numfor Regency',
-                'code' => 'ID-PA-BN',
-                'polygon_coordinates' => [
-                    [
-                        [135.8, -0.8],
-                        [136.2, -0.8],
-                        [136.2, -1.2],
-                        [135.8, -1.2],
-                        [135.8, -0.8]
-                    ]
-                ],
-                'security_level' => 'low',
-                'population' => 141100,
-                'area_hectares' => 225778.0, // 2,257.78 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Jayapura Regency',
-                'code' => 'ID-PA-JR',
-                'polygon_coordinates' => [
-                    [
-                        [140.0, -2.0],
-                        [141.0, -2.0],
-                        [141.0, -3.5],
-                        [140.0, -3.5],
-                        [140.0, -2.0]
-                    ]
-                ],
-                'security_level' => 'medium',
-                'population' => 173280,
-                'area_hectares' => 1408221.0, // 14,082.21 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Keerom Regency',
-                'code' => 'ID-PA-KR',
-                'polygon_coordinates' => [
-                    [
-                        [140.5, -2.5],
-                        [141.0, -2.5],
-                        [141.0, -3.5],
-                        [140.5, -3.5],
-                        [140.5, -2.5]
-                    ]
-                ],
-                'security_level' => 'medium',
-                'population' => 64180,
-                'area_hectares' => 952632.0, // 9,526.32 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Kepulauan Yapen Regency',
-                'code' => 'ID-PA-YI',
-                'polygon_coordinates' => [
-                    [
-                        [135.5, -1.5],
-                        [136.5, -1.5],
-                        [136.5, -2.5],
-                        [135.5, -2.5],
-                        [135.5, -1.5]
-                    ]
-                ],
-                'security_level' => 'low',
-                'population' => 118590,
-                'area_hectares' => 242903.0, // 2,429.03 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Mamberamo Raya Regency',
-                'code' => 'ID-PA-MR',
-                'polygon_coordinates' => [
-                    [
-                        [137.0, -1.0],
-                        [139.5, -1.0],
-                        [139.5, -4.0],
-                        [137.0, -4.0],
-                        [137.0, -1.0]
-                    ]
-                ],
-                'security_level' => 'high',
-                'population' => 39390,
-                'area_hectares' => 2804239.0, // 28,042.39 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Sarmi Regency',
-                'code' => 'ID-PA-SR',
-                'polygon_coordinates' => [
-                    [
-                        [138.5, -1.5],
-                        [140.0, -1.5],
-                        [140.0, -3.0],
-                        [138.5, -3.0],
-                        [138.5, -1.5]
-                    ]
-                ],
-                'security_level' => 'medium',
-                'population' => 43090,
-                'area_hectares' => 1406837.0, // 14,068.37 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Supiori Regency',
-                'code' => 'ID-PA-SP',
-                'polygon_coordinates' => [
-                    [
-                        [135.0, -0.5],
-                        [135.5, -0.5],
-                        [135.5, -1.0],
-                        [135.0, -1.0],
-                        [135.0, -0.5]
-                    ]
-                ],
-                'security_level' => 'low',
-                'population' => 24530,
-                'area_hectares' => 66061.0, // 660.61 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Waropen Regency',
-                'code' => 'ID-PA-WR',
-                'polygon_coordinates' => [
-                    [
-                        [136.0, -2.0],
-                        [137.5, -2.0],
-                        [137.5, -3.5],
-                        [136.0, -3.5],
-                        [136.0, -2.0]
-                    ]
-                ],
-                'security_level' => 'medium',
-                'population' => 35810,
-                'area_hectares' => 1077876.0, // 10,778.76 km²
-                'administrative_level' => 'regency',
-                'is_active' => true,
-            ],
-        ];
+        // Build available file mappings
+        $this->buildAvailableFileMappings();
+
+        // List available files for debugging
+        $this->listAvailableGeoJsonFiles();
+
+        // Load Papua districts data from JSON
+        $jsonPath = resource_path('maps/papua_structured_data/papua_districts_list.json');
+        if (!File::exists($jsonPath)) {
+            $this->command->error("Papua districts JSON file not found at: {$jsonPath}");
+            return;
+        }
+
+        $papuaDistrictsData = json_decode(File::get($jsonPath), true);
+        if (!$papuaDistrictsData) {
+            $this->command->error("Failed to parse Papua districts JSON file");
+            return;
+        }
+
+        $this->command->info('');
+        $this->command->info('🚀 Starting seeding process...');
+
+        // Create provinces first
+        $provinces = $this->createProvinces($papuaDistrictsData);
 
         // Create regencies
-        $regencyModels = [];
-        foreach ($regencies as $regencyData) {
-            $regency = District::create(array_merge($regencyData, [
-                'parent_district_id' => $papuaProvince->id,
-            ]));
-            $regencyModels[$regencyData['name']] = $regency;
-        }
+        $regencies = $this->createRegencies($papuaDistrictsData, $provinces);
 
-        // Create districts for each regency (real data from Wikipedia)
-        $this->createBiakNumforDistricts($regencyModels['Biak Numfor Regency']);
-        $this->createJayapuraDistricts($regencyModels['Jayapura Regency']);
-        $this->createKeeromDistricts($regencyModels['Keerom Regency']);
-        $this->createKepulauanYapenDistricts($regencyModels['Kepulauan Yapen Regency']);
-        $this->createMamberamoRayaDistricts($regencyModels['Mamberamo Raya Regency']);
-        $this->createSarmiDistricts($regencyModels['Sarmi Regency']);
-        $this->createSupioriDistricts($regencyModels['Supiori Regency']);
-        $this->createWaropenDistricts($regencyModels['Waropen Regency']);
+        // Create districts
+        $this->createDistrictsFromData($papuaDistrictsData, $regencies);
 
-        $this->command->info('District seeder completed successfully!');
-        $this->command->info('Created:');
-        $this->command->info('- 1 Province (Papua)');
-        $this->command->info('- 8 Regencies');
-        $this->command->info('- All districts and villages from Wikipedia data');
+        // Show summary
+        $this->showSeederSummary($provinces, $regencies, $papuaDistrictsData);
     }
 
-    private function createBiakNumforDistricts($regency)
+    /**
+     * Build mappings of available GeoJSON files
+     */
+    private function buildAvailableFileMappings(): void
     {
-        $districts = [
-            ['name' => 'Aimando Padaido', 'code' => 'AIMANDO_PADAIDO'],
-            ['name' => 'Andey', 'code' => 'ANDEY'],
-            ['name' => 'Biak Barat', 'code' => 'BIAK_BARAT'],
-            ['name' => 'Biak Kota', 'code' => 'BIAK_KOTA'],
-            ['name' => 'Biak Timur', 'code' => 'BIAK_TIMUR'],
-            ['name' => 'Biak Utara', 'code' => 'BIAK_UTARA'],
-            ['name' => 'Bondifuar', 'code' => 'BONDIFUAR'],
-            ['name' => 'Bruyadori', 'code' => 'BRUYADORI'],
-            ['name' => 'Numfor Barat', 'code' => 'NUMFOR_BARAT'],
-            ['name' => 'Numfor Timur', 'code' => 'NUMFOR_TIMUR'],
-            ['name' => 'Oridek', 'code' => 'ORIDEK'],
-            ['name' => 'Orkeri', 'code' => 'ORKERI'],
-            ['name' => 'Padaido', 'code' => 'PADAIDO'],
-            ['name' => 'Poiru', 'code' => 'POIRU'],
-            ['name' => 'Samofa', 'code' => 'SAMOFA'],
-            ['name' => 'Swandiwe', 'code' => 'SWANDIWE'],
-            ['name' => 'Warsa', 'code' => 'WARSA'],
-            ['name' => 'Yawosi', 'code' => 'YAWOSI'],
-            ['name' => 'Yendidori', 'code' => 'YENDIDORI'],
-        ];
+        // Build province file mapping - simple underscore replacement
+        $provinceFiles = File::glob(resource_path('maps/papua_provinces/*.geojson'));
+        foreach ($provinceFiles as $file) {
+            $fileName = basename($file, '.geojson');
+            $provinceName = str_replace('_', ' ', $fileName);
+            $this->availableProvinceFiles[$provinceName] = $fileName;
+        }
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-BN-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [135.8 + ($index * 0.02), -0.8 - ($index * 0.01)],
-                        [135.85 + ($index * 0.02), -0.8 - ($index * 0.01)],
-                        [135.85 + ($index * 0.02), -0.85 - ($index * 0.01)],
-                        [135.8 + ($index * 0.02), -0.85 - ($index * 0.01)],
-                        [135.8 + ($index * 0.02), -0.8 - ($index * 0.01)]
-                    ]
-                ],
-                'security_level' => 'low',
-                'population' => rand(5000, 15000),
-                'area_hectares' => rand(5000, 20000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
+        // Build regency file mapping - parse {Regency}_{Province} pattern
+        $regencyFiles = File::glob(resource_path('maps/papua_regencies/*.geojson'));
+        foreach ($regencyFiles as $file) {
+            $fileName = basename($file, '.geojson');
+
+            // Try to match against known province patterns
+            foreach ($this->availableProvinceFiles as $provinceName => $provinceFile) {
+                $provincePattern = str_replace(' ', '_', $provinceName);
+                if (str_ends_with($fileName, '_' . $provincePattern)) {
+                    $regencyPart = str_replace('_' . $provincePattern, '', $fileName);
+                    $regencyName = str_replace('_', ' ', $regencyPart);
+                    $this->availableRegencyFiles[$regencyName] = $fileName;
+                    break;
+                }
+            }
+        }
+
+        // Build district file mapping - improved logic for better matching
+        $districtFiles = File::glob(resource_path('maps/papua_districts_detailed/*.geojson'));
+
+        // First, create a more comprehensive regency pattern list
+        $regencyPatterns = [];
+        foreach ($this->availableRegencyFiles as $regencyName => $regencyFile) {
+            // Create multiple possible patterns for each regency
+            $patterns = [
+                str_replace(' ', '_', $regencyName), // Standard pattern
+                str_replace([' ', '-'], '_', $regencyName), // Handle hyphens
+                preg_replace('/[^A-Za-z0-9_]/', '_', $regencyName), // Handle special chars
+            ];
+
+            foreach ($patterns as $pattern) {
+                $regencyPatterns[$pattern] = $regencyName;
+            }
+        }
+
+        // Add direct mapping for known problematic cases
+        $regencyPatterns['Kota_Jayapura'] = 'Kota Jayapura';
+        $regencyPatterns['Kota_Sorong'] = 'Kota Sorong';
+        $regencyPatterns['Pegunungan_Bintang'] = 'Pegunungan Bintang';
+        $regencyPatterns['Boven_Digoel'] = 'Boven Digoel';
+        $regencyPatterns['Puncak_Jaya'] = 'Puncak Jaya';
+        $regencyPatterns['Intan_Jaya'] = 'Intan Jaya';
+        $regencyPatterns['Lanny_Jaya'] = 'Lanny Jaya';
+        $regencyPatterns['Mamberamo_Raya'] = 'Mamberamo Raya';
+        $regencyPatterns['Mamberamo_Tengah'] = 'Mamberamo Tengah';
+        $regencyPatterns['Biak_Numfor'] = 'Biak Numfor';
+        $regencyPatterns['Kepulauan_Yapen'] = 'Kepulauan Yapen';
+        $regencyPatterns['Raja_Ampat'] = 'Raja Ampat';
+        $regencyPatterns['Sorong_Selatan'] = 'Sorong Selatan';
+        $regencyPatterns['Teluk_Wondama'] = 'Teluk Wondama';
+        $regencyPatterns['Teluk_Bintuni'] = 'Teluk Bintuni';
+        $regencyPatterns['Fak_Fak'] = 'Fak Fak';
+        $regencyPatterns['Manokwari_Selatan'] = 'Manokwari Selatan';
+        $regencyPatterns['Pegunungan_Arfak'] = 'Pegunungan Arfak';
+
+        // Build comprehensive district mappings with fallback mechanisms
+        foreach ($districtFiles as $file) {
+            $fileName = basename($file, '.geojson');
+
+            // Handle specific problematic file names first
+            $this->handleSpecificFilePatterns($fileName, $regencyPatterns);
+
+            // Try to find the best matching regency pattern
+            $bestMatch = null;
+            $longestMatch = 0;
+
+            foreach ($regencyPatterns as $pattern => $regencyName) {
+                if (str_ends_with($fileName, '_' . $pattern)) {
+                    if (strlen($pattern) > $longestMatch) {
+                        $longestMatch = strlen($pattern);
+                        $bestMatch = [
+                            'pattern' => $pattern,
+                            'regency' => $regencyName
+                        ];
+                    }
+                }
+            }
+
+            if ($bestMatch) {
+                $districtPart = str_replace('_' . $bestMatch['pattern'], '', $fileName);
+                $districtName = str_replace('_', ' ', $districtPart);
+                $key = $districtName . '|' . $bestMatch['regency'];
+                $this->availableDistrictFiles[$key] = $fileName;
+
+                // Create alternative mappings for problematic district names
+                $this->createAlternativeDistrictMappings($districtName, $bestMatch['regency'], $fileName);
+            }
+        }
+
+        $this->command->info('📂 Built file mappings:');
+        $this->command->info('   - ' . count($this->availableProvinceFiles) . ' Province files mapped');
+        $this->command->info('   - ' . count($this->availableRegencyFiles) . ' Regency files mapped');
+        $this->command->info('   - ' . count($this->availableDistrictFiles) . ' District files mapped');
+
+        // Debug: Show some sample mappings
+        if (!empty($this->availableProvinceFiles)) {
+            $this->command->info('📋 Sample province mappings:');
+            foreach (array_slice($this->availableProvinceFiles, 0, 3, true) as $name => $file) {
+                $this->command->info("   '{$name}' → {$file}.geojson");
+            }
+        }
+
+        if (!empty($this->availableRegencyFiles)) {
+            $this->command->info('📋 Sample regency mappings:');
+            foreach (array_slice($this->availableRegencyFiles, 0, 3, true) as $name => $file) {
+                $this->command->info("   '{$name}' → {$file}.geojson");
+            }
+        }
+
+        if (!empty($this->availableDistrictFiles)) {
+            $this->command->info('📋 Sample district mappings:');
+            foreach (array_slice($this->availableDistrictFiles, 0, 5, true) as $key => $file) {
+                $this->command->info("   '{$key}' → {$file}.geojson");
+            }
+        }
+
+        // Debug: Check specific cases
+        $this->debugSpecificCases();
+    }
+
+    /**
+     * Handle specific file patterns that don't follow standard naming
+     */
+    private function handleSpecificFilePatterns(string $fileName, array $regencyPatterns): void
+    {
+        // Handle Misool_Misool_Utara_Raja_Ampat.geojson
+        if ($fileName === 'Misool_Misool_Utara_Raja_Ampat') {
+            $this->availableDistrictFiles['Misool (Misool Utara)|Raja Ampat'] = $fileName;
+            $this->availableDistrictFiles['Misool|Raja Ampat'] = $fileName;
+            return;
+        }
+
+        // Handle Konda__Kondaga_Tolikara.geojson (double underscore)
+        if ($fileName === 'Konda__Kondaga_Tolikara') {
+            $this->availableDistrictFiles['Konda/ Kondaga|Tolikara'] = $fileName;
+            $this->availableDistrictFiles['Konda Kondaga|Tolikara'] = $fileName;
+            return;
+        }
+
+        // Handle other double underscore patterns
+        if (str_contains($fileName, '__')) {
+            // Try to parse double underscore as space-slash pattern
+            foreach ($regencyPatterns as $pattern => $regencyName) {
+                if (str_ends_with($fileName, '_' . $pattern)) {
+                    $districtPart = str_replace('_' . $pattern, '', $fileName);
+
+                    // Replace double underscore with "/ "
+                    if (str_contains($districtPart, '__')) {
+                        $cleanDistrictName = str_replace('__', '/ ', $districtPart);
+                        $key = $cleanDistrictName . '|' . $regencyName;
+                        $this->availableDistrictFiles[$key] = $fileName;
+
+                        // Also create alternative without the slash
+                        $altDistrictName = str_replace('__', ' ', $districtPart);
+                        $altKey = $altDistrictName . '|' . $regencyName;
+                        $this->availableDistrictFiles[$altKey] = $fileName;
+                        return;
+                    }
+                }
+            }
         }
     }
 
-    private function createJayapuraDistricts($regency)
+    /**
+     * Create alternative district mappings for problematic names
+     */
+    private function createAlternativeDistrictMappings(string $districtName, string $regencyName, string $fileName): void
     {
-        $districts = [
-            ['name' => 'Abepura', 'code' => 'ABEPURA'],
-            ['name' => 'Airu', 'code' => 'AIRU'],
-            ['name' => 'Demta', 'code' => 'DEMTA'],
-            ['name' => 'Depapre', 'code' => 'DEPAPRE'],
-            ['name' => 'Ebungfao', 'code' => 'EBUNGFAO'],
-            ['name' => 'Gresi Selatan', 'code' => 'GRESI_SELATAN'],
-            ['name' => 'Heram', 'code' => 'HERAM'],
-            ['name' => 'Jayapura Selatan', 'code' => 'JAYAPURA_SELATAN'],
-            ['name' => 'Jayapura Utara', 'code' => 'JAYAPURA_UTARA'],
-            ['name' => 'Kaureh', 'code' => 'KAUREH'],
-            ['name' => 'Kemtuk', 'code' => 'KEMTUK'],
-            ['name' => 'Kemtuk Gresi', 'code' => 'KEMTUK_GRESI'],
-            ['name' => 'Muara Tami', 'code' => 'MUARA_TAMI'],
-            ['name' => 'Nambluong', 'code' => 'NAMBLUONG'],
-            ['name' => 'Nimbokrang', 'code' => 'NIMBOKRANG'],
-            ['name' => 'Nimboran', 'code' => 'NIMBORAN'],
-            ['name' => 'Raveni Rara', 'code' => 'RAVENI_RARA'],
-            ['name' => 'Sentani', 'code' => 'SENTANI'],
-            ['name' => 'Sentani Barat', 'code' => 'SENTANI_BARAT'],
-            ['name' => 'Sentani Timur', 'code' => 'SENTANI_TIMUR'],
-            ['name' => 'Unurum Guay', 'code' => 'UNURUM_GUAY'],
-            ['name' => 'Waibu', 'code' => 'WAIBU'],
-            ['name' => 'Yapsi', 'code' => 'YAPSI'],
-            ['name' => 'Yokari', 'code' => 'YOKARI'],
+        // Handle parentheses - remove content in parentheses
+        if (str_contains($districtName, '(') && str_contains($districtName, ')')) {
+            $alternativeName = trim(preg_replace('/\([^)]*\)/', '', $districtName));
+            if ($alternativeName !== $districtName) {
+                $key = $alternativeName . '|' . $regencyName;
+                $this->availableDistrictFiles[$key] = $fileName;
+            }
+        }
+
+        // Handle forward slashes - create alternatives with different slash handling
+        if (str_contains($districtName, '/')) {
+            // Replace / with space
+            $alternative1 = str_replace('/', ' ', $districtName);
+            $key1 = $alternative1 . '|' . $regencyName;
+            $this->availableDistrictFiles[$key1] = $fileName;
+
+            // Take only first part before /
+            $alternative2 = trim(explode('/', $districtName)[0]);
+            $key2 = $alternative2 . '|' . $regencyName;
+            $this->availableDistrictFiles[$key2] = $fileName;
+        }
+
+        // Handle specific known problematic cases
+        $knownMappings = [
+            'Misool (Misool Utara)' => 'Misool Utara',
+            'Wari/Taiyeve II' => 'Wari Taiyeve II',
+            'Konda/ Kondaga' => 'Konda Kondaga',
+            'Fak-Fak Tengah' => 'Fak Fak Tengah',
+            'Fak-Fak' => 'Fak Fak',
+            'Fak-Fak Barat' => 'Fak Fak Barat',
+            'Fak-Fak Timur' => 'Fak Fak Timur',
+            'Suru-suru' => 'Suru suru',
+            'Citak-Mitak' => 'Citak Mitak',
         ];
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-JR-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [140.0 + ($index * 0.03), -2.0 - ($index * 0.02)],
-                        [140.05 + ($index * 0.03), -2.0 - ($index * 0.02)],
-                        [140.05 + ($index * 0.03), -2.05 - ($index * 0.02)],
-                        [140.0 + ($index * 0.03), -2.05 - ($index * 0.02)],
-                        [140.0 + ($index * 0.03), -2.0 - ($index * 0.02)]
-                    ]
-                ],
-                'security_level' => $index < 10 ? 'low' : 'medium',
-                'population' => rand(8000, 25000),
-                'area_hectares' => rand(10000, 50000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
+        foreach ($knownMappings as $problematic => $clean) {
+            if ($districtName === $clean) {
+                $key = $problematic . '|' . $regencyName;
+                $this->availableDistrictFiles[$key] = $fileName;
+            }
+        }
+
+        // Handle the two remaining problematic cases specifically
+        $specificCases = [
+            // Maps "Misool Utara|Raja Ampat" to "Misool (Misool Utara)|Raja Ampat"
+            'Misool Utara|Raja Ampat' => 'Misool (Misool Utara)|Raja Ampat',
+            // Maps "Konda Kondaga|Tolikara" to "Konda/ Kondaga|Tolikara"
+            'Konda Kondaga|Tolikara' => 'Konda/ Kondaga|Tolikara',
+        ];
+
+        foreach ($specificCases as $cleanKey => $problematicKey) {
+            $currentKey = $districtName . '|' . $regencyName;
+            if ($currentKey === $cleanKey) {
+                $this->availableDistrictFiles[$problematicKey] = $fileName;
+            }
         }
     }
 
-    private function createKeeromDistricts($regency)
+    /**
+     * Debug specific problematic cases
+     */
+    private function debugSpecificCases(): void
     {
-        $districts = [
-            ['name' => 'Arso', 'code' => 'ARSO'],
-            ['name' => 'Arso Barat', 'code' => 'ARSO_BARAT'],
-            ['name' => 'Arso Timur', 'code' => 'ARSO_TIMUR'],
-            ['name' => 'Kaisenar', 'code' => 'KAISENAR'],
-            ['name' => 'Mannem', 'code' => 'MANNEM'],
-            ['name' => 'Senggi', 'code' => 'SENGGI'],
-            ['name' => 'Skanto', 'code' => 'SKANTO'],
-            ['name' => 'Towe', 'code' => 'TOWE'],
-            ['name' => 'Waris', 'code' => 'WARIS'],
-            ['name' => 'Web', 'code' => 'WEB'],
-            ['name' => 'Yaffi', 'code' => 'YAFFI'],
+        $testCases = [
+            'Abepura|Kota Jayapura',
+            'Misool (Misool Utara)|Raja Ampat',
+            'Wari/Taiyeve II|Tolikara',
+            'Konda/ Kondaga|Tolikara',
+            'Bewani|Tolikara'
         ];
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-KR-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [140.5 + ($index * 0.04), -2.5 - ($index * 0.08)],
-                        [140.55 + ($index * 0.04), -2.5 - ($index * 0.08)],
-                        [140.55 + ($index * 0.04), -2.55 - ($index * 0.08)],
-                        [140.5 + ($index * 0.04), -2.55 - ($index * 0.08)],
-                        [140.5 + ($index * 0.04), -2.5 - ($index * 0.08)]
-                    ]
-                ],
+        $this->command->info('🔍 Debugging specific cases:');
+        foreach ($testCases as $testCase) {
+            if (isset($this->availableDistrictFiles[$testCase])) {
+                $this->command->info("   ✅ '{$testCase}' → {$this->availableDistrictFiles[$testCase]}.geojson");
+            } else {
+                $this->command->warn("   ❌ '{$testCase}' not found");
+
+                // Show similar keys
+                $district = explode('|', $testCase)[0];
+                $regency = explode('|', $testCase)[1];
+                $similar = [];
+                foreach ($this->availableDistrictFiles as $key => $file) {
+                    if (str_contains($key, $regency) &&
+                        (str_contains(strtolower($key), strtolower($district)) ||
+                         str_contains(strtolower($district), strtolower(explode('|', $key)[0])))) {
+                        $similar[] = $key;
+                    }
+                }
+                if (!empty($similar)) {
+                    $this->command->info("     Similar keys: " . implode(', ', array_slice($similar, 0, 3)));
+                }
+            }
+        }
+    }
+
+    private function createProvinces(array $districtsData): array
+    {
+        $provinces = [];
+        $uniqueProvinces = collect($districtsData)->pluck('province')->unique();
+
+        foreach ($uniqueProvinces as $provinceName) {
+            $code = $this->generateUniqueProvinceCode($provinceName);
+
+            $province = District::create([
+                'name' => $provinceName,
+                'code' => $code,
+                'province' => $provinceName,
+                'geojson_file_path' => $this->getProvinceGeoJsonPath($provinceName),
                 'security_level' => 'medium',
-                'population' => rand(3000, 12000),
-                'area_hectares' => rand(8000, 30000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
+                'population' => $this->getProvincePopulation($provinceName),
+                'area_hectares' => $this->getProvinceArea($provinceName),
+                'administrative_level' => 'province',
+                'parent_district_id' => null,
                 'is_active' => true,
             ]);
+
+            $provinces[$provinceName] = $province;
+            $this->command->info("✅ Created province: {$provinceName} ({$code})");
+        }
+
+        return $provinces;
+    }
+
+    private function createRegencies(array $districtsData, array $provinces): array
+    {
+        $regencies = [];
+
+        foreach ($districtsData as $districtData) {
+            $regencyName = $districtData['regency'];
+            $provinceName = $districtData['province'];
+
+            if (!isset($regencies[$regencyName])) {
+                $code = $this->generateUniqueRegencyCode($regencyName, $provinceName);
+
+                $regency = District::create([
+                    'name' => $regencyName,
+                    'code' => $code,
+                    'province' => $provinceName,
+                    'geojson_file_path' => $this->getRegencyGeoJsonPath($regencyName, $provinceName),
+                    'security_level' => 'medium',
+                    'population' => $this->getRegencyPopulation($regencyName),
+                    'area_hectares' => $this->getRegencyArea($regencyName),
+                    'administrative_level' => 'regency',
+                    'parent_district_id' => $provinces[$provinceName]->id,
+                    'is_active' => true,
+                ]);
+
+                $regencies[$regencyName] = $regency;
+                $this->command->info("✅ Created regency: {$regencyName} in {$provinceName} ({$code})");
+            }
+        }
+
+        return $regencies;
+    }
+
+    private function createDistrictsFromData(array $districtsData, array $regencies): void
+    {
+        $processedCount = 0;
+        foreach ($districtsData as $index => $districtData) {
+            $districtName = $districtData['district'];
+            $regencyName = $districtData['regency'];
+            $provinceName = $districtData['province'];
+
+            $code = $this->generateUniqueDistrictCode($districtName, $regencyName);
+
+            $district = District::create([
+                'name' => $districtName,
+                'code' => $code,
+                'regency_id' => $regencies[$regencyName]->id,
+                'province' => $provinceName,
+                'geojson_file_path' => $this->getDistrictGeoJsonPath($districtName, $regencyName),
+                'security_level' => $this->getDistrictSecurityLevel($districtName, $regencyName),
+                'population' => rand(5000, 50000),
+                'area_hectares' => rand(10000, 100000),
+                'administrative_level' => 'district',
+                'parent_district_id' => $regencies[$regencyName]->id,
+                'is_active' => true,
+            ]);
+
+            $processedCount++;
+            if ($processedCount % 50 === 0) {
+                $this->command->info("📍 Created {$processedCount} districts...");
+            }
         }
     }
 
-    private function createKepulauanYapenDistricts($regency)
+    /**
+     * Get GeoJSON file path for province
+     */
+    private function getProvinceGeoJsonPath(string $provinceName): ?string
     {
-        $districts = [
-            ['name' => 'Angkaisera', 'code' => 'ANGKAISERA'],
-            ['name' => 'Anotaurei', 'code' => 'ANOTAUREI'],
-            ['name' => 'Kepulauan Ambai', 'code' => 'KEPULAUAN_AMBAI'],
-            ['name' => 'Kosiwo', 'code' => 'KOSIWO'],
-            ['name' => 'Poom', 'code' => 'POOM'],
-            ['name' => 'Pulau Kurudu', 'code' => 'PULAU_KURUDU'],
-            ['name' => 'Pulau Yerui', 'code' => 'PULAU_YERUI'],
-            ['name' => 'Raimbawi', 'code' => 'RAIMBAWI'],
-            ['name' => 'Teluk Ampimoi', 'code' => 'TELUK_AMPIMOI'],
-            ['name' => 'Windesi', 'code' => 'WINDESI'],
-            ['name' => 'Wonawa', 'code' => 'WONAWA'],
-            ['name' => 'Yapen Barat', 'code' => 'YAPEN_BARAT'],
-            ['name' => 'Yapen Selatan', 'code' => 'YAPEN_SELATAN'],
-            ['name' => 'Yapen Timur', 'code' => 'YAPEN_TIMUR'],
-            ['name' => 'Yapen Utara', 'code' => 'YAPEN_UTARA'],
-            ['name' => 'Yawakukat', 'code' => 'YAWAKUKAT'],
-        ];
+        if (isset($this->availableProvinceFiles[$provinceName])) {
+            $fileName = $this->availableProvinceFiles[$provinceName];
+            $filePath = "maps/papua_provinces/{$fileName}.geojson";
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-YI-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [135.5 + ($index * 0.06), -1.5 - ($index * 0.06)],
-                        [135.55 + ($index * 0.06), -1.5 - ($index * 0.06)],
-                        [135.55 + ($index * 0.06), -1.55 - ($index * 0.06)],
-                        [135.5 + ($index * 0.06), -1.55 - ($index * 0.06)],
-                        [135.5 + ($index * 0.06), -1.5 - ($index * 0.06)]
-                    ]
-                ],
-                'security_level' => 'low',
-                'population' => rand(2000, 10000),
-                'area_hectares' => rand(5000, 25000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
+            if (File::exists(resource_path($filePath))) {
+                $this->logGeoJsonAttempt('Province', $provinceName, true);
+                return $filePath;
+            }
         }
+
+        $this->logGeoJsonAttempt('Province', $provinceName, false);
+        return null;
     }
 
-    private function createMamberamoRayaDistricts($regency)
+    /**
+     * Get GeoJSON file path for regency
+     */
+    private function getRegencyGeoJsonPath(string $regencyName, string $provinceName): ?string
     {
-        $districts = [
-            ['name' => 'Benuki', 'code' => 'BENUKI'],
-            ['name' => 'Mamberamo Hilir', 'code' => 'MAMBERAMO_HILIR'],
-            ['name' => 'Mamberamo Hulu', 'code' => 'MAMBERAMO_HULU'],
-            ['name' => 'Mamberamo Tengah', 'code' => 'MAMBERAMO_TENGAH'],
-            ['name' => 'Mamberamo Tengah Timur', 'code' => 'MAMBERAMO_TENGAH_TIMUR'],
-            ['name' => 'Rufaer', 'code' => 'RUFAER'],
-            ['name' => 'Sawai', 'code' => 'SAWAI'],
-            ['name' => 'Waropen Atas', 'code' => 'WAROPEN_ATAS'],
-        ];
+        if (isset($this->availableRegencyFiles[$regencyName])) {
+            $fileName = $this->availableRegencyFiles[$regencyName];
+            $filePath = "maps/papua_regencies/{$fileName}.geojson";
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-MR-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [137.0 + ($index * 0.3), -1.0 - ($index * 0.3)],
-                        [137.1 + ($index * 0.3), -1.0 - ($index * 0.3)],
-                        [137.1 + ($index * 0.3), -1.1 - ($index * 0.3)],
-                        [137.0 + ($index * 0.3), -1.1 - ($index * 0.3)],
-                        [137.0 + ($index * 0.3), -1.0 - ($index * 0.3)]
-                    ]
-                ],
-                'security_level' => 'high',
-                'population' => rand(1500, 8000),
-                'area_hectares' => rand(50000, 200000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
+            if (File::exists(resource_path($filePath))) {
+                $this->logGeoJsonAttempt('Regency', $regencyName, true);
+                return $filePath;
+            }
         }
+
+        $this->logGeoJsonAttempt('Regency', $regencyName, false);
+        return null;
     }
 
-    private function createSarmiDistricts($regency)
+    /**
+     * Get GeoJSON file path for district
+     */
+    private function getDistrictGeoJsonPath(string $districtName, string $regencyName): ?string
     {
-        $districts = [
-            ['name' => 'Apawer Hulu', 'code' => 'APAWER_HULU'],
-            ['name' => 'Bonggo', 'code' => 'BONGGO'],
-            ['name' => 'Bonggo Timur', 'code' => 'BONGGO_TIMUR'],
-            ['name' => 'Pantai Barat', 'code' => 'PANTAI_BARAT'],
-            ['name' => 'Pantai Timur', 'code' => 'PANTAI_TIMUR'],
-            ['name' => 'Pantai Timur Bagian Barat', 'code' => 'PANTAI_TIMUR_BAGIAN_BARAT'],
-            ['name' => 'Sarmi', 'code' => 'SARMI'],
-            ['name' => 'Sarmi Selatan', 'code' => 'SARMI_SELATAN'],
-            ['name' => 'Sarmi Timur', 'code' => 'SARMI_TIMUR'],
-            ['name' => 'Tor Atas', 'code' => 'TOR_ATAS'],
-        ];
+        $districtKey = $districtName . '|' . $regencyName;
+        if (isset($this->availableDistrictFiles[$districtKey])) {
+            $fileName = $this->availableDistrictFiles[$districtKey];
+            $filePath = "maps/papua_districts_detailed/{$fileName}.geojson";
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-SR-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [138.5 + ($index * 0.15), -1.5 - ($index * 0.15)],
-                        [138.6 + ($index * 0.15), -1.5 - ($index * 0.15)],
-                        [138.6 + ($index * 0.15), -1.6 - ($index * 0.15)],
-                        [138.5 + ($index * 0.15), -1.6 - ($index * 0.15)],
-                        [138.5 + ($index * 0.15), -1.5 - ($index * 0.15)]
-                    ]
-                ],
-                'security_level' => 'medium',
-                'population' => rand(2000, 8000),
-                'area_hectares' => rand(10000, 40000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
+            if (File::exists(resource_path($filePath))) {
+                $this->logGeoJsonAttempt('District', "{$districtName} ({$regencyName})", true);
+                return $filePath;
+            }
         }
+
+        $this->logGeoJsonAttempt('District', "{$districtName} ({$regencyName})", false);
+        return null;
     }
 
-    private function createSupioriDistricts($regency)
+    private function generateUniqueProvinceCode(string $provinceName): string
     {
-        $districts = [
-            ['name' => 'Kepulauan Aruri', 'code' => 'KEPULAUAN_ARURI'],
-            ['name' => 'Supiori Barat', 'code' => 'SUPIORI_BARAT'],
-            ['name' => 'Supiori Selatan', 'code' => 'SUPIORI_SELATAN'],
-            ['name' => 'Supiori Timur', 'code' => 'SUPIORI_TIMUR'],
-            ['name' => 'Supiori Utara', 'code' => 'SUPIORI_UTARA'],
+        $baseCodes = [
+            'Papua' => 'ID-PA',
+            'Papua Barat' => 'ID-PB',
+            'Papua Barat Daya' => 'ID-PBD',
+            'Papua Pegunungan' => 'ID-PP',
+            'Papua Selatan' => 'ID-PS',
+            'Papua Tengah' => 'ID-PT',
         ];
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-SP-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [135.0 + ($index * 0.1), -0.5 - ($index * 0.1)],
-                        [135.05 + ($index * 0.1), -0.5 - ($index * 0.1)],
-                        [135.05 + ($index * 0.1), -0.55 - ($index * 0.1)],
-                        [135.0 + ($index * 0.1), -0.55 - ($index * 0.1)],
-                        [135.0 + ($index * 0.1), -0.5 - ($index * 0.1)]
-                    ]
-                ],
-                'security_level' => 'low',
-                'population' => rand(1000, 6000),
-                'area_hectares' => rand(3000, 15000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
-        }
+        $baseCode = $baseCodes[$provinceName] ?? 'ID-' . strtoupper(substr($provinceName, 0, 2));
+
+        // Don't use ensureUniqueCode for provinces - they should be fixed
+        $this->usedCodes[] = $baseCode;
+        return $baseCode;
     }
 
-    private function createWaropenDistricts($regency)
+    private function generateUniqueRegencyCode(string $regencyName, string $provinceName): string
     {
-        $districts = [
-            ['name' => 'Demba', 'code' => 'DEMBA'],
-            ['name' => 'Inggerus', 'code' => 'INGGERUS'],
-            ['name' => 'Kirihi', 'code' => 'KIRIHI'],
-            ['name' => 'Masirei', 'code' => 'MASIREI'],
-            ['name' => 'Oudate', 'code' => 'OUDATE'],
-            ['name' => 'Risei Sayati', 'code' => 'RISEI_SAYATI'],
-            ['name' => 'Soyoi Mambai', 'code' => 'SOYOI_MAMBAI'],
-            ['name' => 'Urei Faisei', 'code' => 'UREI_FAISEI'],
-            ['name' => 'Wapoga', 'code' => 'WAPOGA'],
-            ['name' => 'Waropen Bawah', 'code' => 'WAROPEN_BAWAH'],
-            ['name' => 'Wonti', 'code' => 'WONTI'],
+        // Get fixed province code
+        $provinceCodeMap = [
+            'Papua' => 'ID-PA',
+            'Papua Barat' => 'ID-PB',
+            'Papua Barat Daya' => 'ID-PBD',
+            'Papua Pegunungan' => 'ID-PP',
+            'Papua Selatan' => 'ID-PS',
+            'Papua Tengah' => 'ID-PT',
         ];
 
-        foreach ($districts as $index => $districtData) {
-            District::create([
-                'name' => $districtData['name'],
-                'code' => 'ID-PA-WR-' . $districtData['code'],
-                'polygon_coordinates' => [
-                    [
-                        [136.0 + ($index * 0.13), -2.0 - ($index * 0.13)],
-                        [136.05 + ($index * 0.13), -2.0 - ($index * 0.13)],
-                        [136.05 + ($index * 0.13), -2.05 - ($index * 0.13)],
-                        [136.0 + ($index * 0.13), -2.05 - ($index * 0.13)],
-                        [136.0 + ($index * 0.13), -2.0 - ($index * 0.13)]
-                    ]
-                ],
-                'security_level' => 'medium',
-                'population' => rand(1500, 7000),
-                'area_hectares' => rand(8000, 35000),
-                'administrative_level' => 'district',
-                'parent_district_id' => $regency->id,
-                'is_active' => true,
-            ]);
+        $provinceCode = $provinceCodeMap[$provinceName] ?? 'ID-UN';
+
+        // Extract meaningful parts from regency name
+        $regencyParts = explode(' ', $regencyName);
+        $regencyCode = '';
+
+        // Build code from first letters of each word, max 3 characters
+        foreach ($regencyParts as $part) {
+            if (strlen($regencyCode) < 3 && !empty($part)) {
+                $regencyCode .= strtoupper(substr($part, 0, 1));
+            }
+        }
+
+        // If too short, add more characters from first word
+        if (strlen($regencyCode) < 3 && !empty($regencyParts[0])) {
+            $regencyCode = strtoupper(substr($regencyParts[0], 0, 3));
+        }
+
+        $baseCode = $provinceCode . '-' . $regencyCode;
+        return $this->ensureUniqueCode($baseCode);
+    }
+
+    private function generateUniqueDistrictCode(string $districtName, string $regencyName): string
+    {
+        // Generate a unique code based on regency and district
+        $regencyCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $regencyName), 0, 3));
+        $districtCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $districtName), 0, 3));
+
+        $baseCode = $regencyCode . '-' . $districtCode;
+        return $this->ensureUniqueCode($baseCode, true);
+    }
+
+    private function ensureUniqueCode(string $baseCode, bool $addRandom = false): string
+    {
+        $code = $baseCode;
+        $counter = 1;
+
+        while (in_array($code, $this->usedCodes)) {
+            if ($addRandom) {
+                $code = $baseCode . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            } else {
+                $code = $baseCode . $counter;
+            }
+            $counter++;
+        }
+
+        $this->usedCodes[] = $code;
+        return $code;
+    }
+
+    private function normalizeForFilename(string $name): string
+    {
+        return str_replace([' ', '/', '-', '(', ')', '.', ',', "'"], ['_', '_', '_', '', '', '', '', ''], $name);
+    }
+
+    /**
+     * Enhanced logging for coordinate extraction success/failure
+     */
+    private function logGeoJsonAttempt(string $type, string $name, bool $found): void
+    {
+        $status = $found ? '✅ FOUND' : '❌ NOT FOUND';
+        $this->command->info("GeoJSON {$type} '{$name}': {$status}");
+    }
+
+    /**
+     * Show summary statistics at the end
+     */
+    private function showSeederSummary(array $provinces, array $regencies, array $districtsData): void
+    {
+        $this->command->info('');
+        $this->command->info('=== SEEDER SUMMARY ===');
+        $this->command->info('✅ Created:');
+        $this->command->info("   - " . count($provinces) . " Provinces");
+        $this->command->info("   - " . count($regencies) . " Regencies");
+        $this->command->info("   - " . count($districtsData) . " Districts");
+
+        // Count how many actually have GeoJSON files
+        $provincesWithGeoJson = 0;
+        $regenciesWithGeoJson = 0;
+
+        foreach ($provinces as $province) {
+            if ($province->geojson_file_path) $provincesWithGeoJson++;
+        }
+
+        foreach ($regencies as $regency) {
+            if ($regency->geojson_file_path) $regenciesWithGeoJson++;
+        }
+
+        $districtsWithGeoJson = District::whereNotNull('geojson_file_path')
+            ->where('administrative_level', 'district')
+            ->count();
+
+        $this->command->info('📁 With GeoJSON files:');
+        $this->command->info("   - {$provincesWithGeoJson}/" . count($provinces) . " Provinces");
+        $this->command->info("   - {$regenciesWithGeoJson}/" . count($regencies) . " Regencies");
+        $this->command->info("   - {$districtsWithGeoJson}/" . count($districtsData) . " Districts");
+        $this->command->info('');
+    }
+
+    private function getDistrictSecurityLevel(string $districtName, string $regencyName): string
+    {
+        // Define security levels based on known conditions
+        $highRiskRegencies = ['Mimika', 'Pegunungan Bintang', 'Nduga', 'Yahukimo'];
+        $highRiskDistricts = ['Tembagapura', 'Oksibil', 'Mapenduma', 'Dekai'];
+
+        if (in_array($regencyName, $highRiskRegencies) || in_array($districtName, $highRiskDistricts)) {
+            return 'high';
+        }
+
+        if (str_contains(strtolower($districtName), 'timur') || str_contains(strtolower($districtName), 'utara')) {
+            return 'medium';
+        }
+
+        return 'low';
+    }
+
+    private function getProvincePopulation(string $provinceName): int
+    {
+        $populations = [
+            'Papua' => 1060550,
+            'Papua Barat' => 1134068,
+            'Papua Barat Daya' => 365054,
+            'Papua Pegunungan' => 1448360,
+            'Papua Selatan' => 522840,
+            'Papua Tengah' => 1452514,
+        ];
+
+        return $populations[$provinceName] ?? 500000;
+    }
+
+    private function getProvinceArea(string $provinceName): float
+    {
+        $areas = [
+            'Papua' => 9950000.0,
+            'Papua Barat' => 13264487.0,
+            'Papua Barat Daya' => 3602386.0,
+            'Papua Pegunungan' => 4989381.0,
+            'Papua Selatan' => 12909574.0,
+            'Papua Tengah' => 6127844.0,
+        ];
+
+        return $areas[$provinceName] ?? 5000000.0;
+    }
+
+    private function getRegencyPopulation(string $regencyName): int
+    {
+        $largeRegencies = ['Merauke', 'Mimika', 'Jayawijaya', 'Biak Numfor'];
+
+        if (in_array($regencyName, $largeRegencies)) {
+            return rand(150000, 300000);
+        }
+
+        return rand(50000, 150000);
+    }
+
+    private function getRegencyArea(string $regencyName): float
+    {
+        $largeRegencies = ['Merauke', 'Mamberamo Raya', 'Boven Digoel'];
+
+        if (in_array($regencyName, $largeRegencies)) {
+            return rand(2000000, 4000000);
+        }
+
+        return rand(100000, 1000000);
+    }
+
+    /**
+     * List available GeoJSON files for debugging
+     */
+    private function listAvailableGeoJsonFiles(): void
+    {
+        $this->command->info('=== Available GeoJSON Files ===');
+
+        // List province files
+        $provinceFiles = File::glob(resource_path('maps/papua_provinces/*.geojson'));
+        $this->command->info('Province files (' . count($provinceFiles) . '):');
+        foreach ($provinceFiles as $file) {
+            $this->command->info('  - ' . basename($file));
+        }
+
+        // List regency files
+        $regencyFiles = File::glob(resource_path('maps/papua_regencies/*.geojson'));
+        $this->command->info('Regency files (' . count($regencyFiles) . '):');
+        foreach (array_slice($regencyFiles, 0, 10) as $file) {
+            $this->command->info('  - ' . basename($file));
+        }
+        if (count($regencyFiles) > 10) {
+            $this->command->info('  ... and ' . (count($regencyFiles) - 10) . ' more');
+        }
+
+        // List district files
+        $districtFiles = File::glob(resource_path('maps/papua_districts_detailed/*.geojson'));
+        $this->command->info('District files (' . count($districtFiles) . '):');
+        foreach (array_slice($districtFiles, 0, 10) as $file) {
+            $this->command->info('  - ' . basename($file));
+        }
+        if (count($districtFiles) > 10) {
+            $this->command->info('  ... and ' . (count($districtFiles) - 10) . ' more');
         }
     }
 }
