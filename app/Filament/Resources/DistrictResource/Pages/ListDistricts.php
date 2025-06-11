@@ -20,7 +20,7 @@ class ListDistricts extends ListRecords
     protected function getHeaderWidgets(): array
     {
         return [
-            \App\Filament\Widgets\DistrictStatsWidget::class,
+            // \App\Filament\Widgets\DistrictStatsWidget::class,
         ];
     }
 }

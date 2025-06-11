@@ -15,8 +15,8 @@
         <!-- Map Container -->
         <div
             id="{{ $id }}-map"
-            style="height: {{ $height }}; width: 100%;"
-            class="border border-gray-300 rounded-lg overflow-hidden"
+            style="height: {{ $height }}; width: 100%; position: relative; z-index: 1;"
+            class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden"
         ></div>
 
         <!-- Hidden input to store the coordinate data -->
@@ -24,50 +24,57 @@
 
         <!-- Map Controls -->
         @unless($isDisabled)
-            <div class="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                <button
-                    type="button"
-                    id="{{ $id }}-clear"
-                    class="px-3 py-2 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                >
-                    🗑️ Hapus Poligon
-                </button>
-
-                <button
-                    type="button"
-                    id="{{ $id }}-draw"
-                    class="px-3 py-2 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                >
-                    ✏️ Gambar Poligon
-                </button>
-
-                <button
-                    type="button"
-                    id="{{ $id }}-edit"
-                    class="px-3 py-2 text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-md shadow-sm transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
-                >
-                    📝 Edit Poligon
-                </button>
-
-                @if($record && $record->geojson_file_path)
-                    <button
+            <x-filament::section>
+                <div class="flex flex-wrap gap-3">
+                    <x-filament::button
                         type="button"
-                        id="{{ $id }}-load-geojson"
-                        class="px-3 py-2 text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                        id="{{ $id }}-clear"
+                        color="danger"
+                        icon="heroicon-o-trash"
+                        size="sm"
                     >
-                        📁 Muat dari GeoJSON
-                    </button>
-                @endif
+                        Hapus Poligon
+                    </x-filament::button>
 
-                <div class="flex items-center ml-auto">
-                    <span class="text-xs text-gray-600 dark:text-gray-300 flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Klik dan seret untuk menggambar batas wilayah
-                    </span>
+                    <x-filament::button
+                        type="button"
+                        id="{{ $id }}-draw"
+                        color="primary"
+                        icon="heroicon-o-pencil"
+                        size="sm"
+                    >
+                        Gambar Poligon
+                    </x-filament::button>
+
+                    <x-filament::button
+                        type="button"
+                        id="{{ $id }}-edit"
+                        color="success"
+                        icon="heroicon-o-pencil-square"
+                        size="sm"
+                    >
+                        Edit Poligon
+                    </x-filament::button>
+
+                    @if($record && $record->geojson_file_path)
+                        <x-filament::button
+                            type="button"
+                            id="{{ $id }}-load-geojson"
+                            color="info"
+                            icon="heroicon-o-cloud-arrow-down"
+                            size="sm"
+                        >
+                            Muat dari GeoJSON
+                        </x-filament::button>
+                    @endif
+
+                    <div class="ml-auto">
+                        <x-filament::badge color="info" icon="heroicon-o-information-circle">
+                            Klik dan seret untuk menggambar batas wilayah
+                        </x-filament::badge>
+                    </div>
                 </div>
-            </div>
+            </x-filament::section>
         @endunless
     </div>
 
@@ -439,5 +446,47 @@
                 }, 200);
             });
         </script>
+    @endpush
+
+    @push('styles')
+        <style>
+            /* Fix z-index for Leaflet map controls to not overlap Filament UI */
+            #{{ $id }}-map .leaflet-control-container {
+                z-index: 10 !important;
+            }
+
+            #{{ $id }}-map .leaflet-control {
+                z-index: 10 !important;
+            }
+
+            #{{ $id }}-map .leaflet-popup {
+                z-index: 15 !important;
+            }
+
+            #{{ $id }}-map .leaflet-popup-pane {
+                z-index: 15 !important;
+            }
+
+            #{{ $id }}-map .leaflet-tooltip {
+                z-index: 12 !important;
+            }
+
+            #{{ $id }}-map .leaflet-draw-toolbar {
+                z-index: 10 !important;
+            }
+
+            #{{ $id }}-map .leaflet-draw-actions {
+                z-index: 11 !important;
+            }
+
+            /* Fix drawing controls z-index */
+            .leaflet-draw-section {
+                z-index: 10 !important;
+            }
+
+            .leaflet-draw-toolbar a {
+                z-index: 10 !important;
+            }
+        </style>
     @endpush
 </x-dynamic-component>
