@@ -438,6 +438,7 @@ class DistrictSeeder extends Seeder
                 'regency_id' => $regencies[$regencyName]->id,
                 'province' => $provinceName,
                 'geojson_file_path' => $this->getDistrictGeoJsonPath($districtName, $regencyName),
+                'custom_coordinates' => null, // Start with null, will be filled when user edits
                 'security_level' => $this->getDistrictSecurityLevel($districtName, $regencyName),
                 'population' => rand(5000, 50000),
                 'area_hectares' => rand(10000, 100000),

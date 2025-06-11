@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('regency_id')->nullable()->constrained('districts');
             $table->string('province')->nullable();
             $table->string('geojson_file_path')->nullable(); // Store file path instead of coordinates
+            $table->json('custom_coordinates')->nullable(); // Store manually drawn coordinates
             $table->enum('security_level', ["low","medium","high","critical"])->default('medium');
             $table->bigInteger('population')->nullable();
             $table->decimal('area_hectares', 15, 2)->nullable();

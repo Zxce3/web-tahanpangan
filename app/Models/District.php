@@ -23,6 +23,7 @@ class District extends Model
         'regency_id',
         'province',
         'geojson_file_path',
+        'custom_coordinates', // Add this field
         'security_level',
         'population',
         'area_hectares',
@@ -44,14 +45,42 @@ class District extends Model
             'area_hectares' => 'decimal:2',
             'parent_district_id' => 'integer',
             'is_active' => 'boolean',
+            'custom_coordinates' => 'array', // Cast JSON to array
         ];
     }
 
     /**
-     * Get polygon coordinates from GeoJSON file
+     * Get coordinates for Leaflet map (prioritize custom, then file-based)
+     */
+    public function getMapCoordinatesAttribute(): ?array
+    {
+        // First try custom coordinates (already in Leaflet format [lat, lng])
+        if ($this->custom_coordinates && is_array($this->custom_coordinates)) {
+            return $this->custom_coordinates;
+        }
+
+        // Fallback to file coordinates (need conversion from [lng, lat] to [lat, lng])
+        $coordinates = $this->polygon_coordinates;
+
+        if (!$coordinates) {
+            return null;
+        }
+
+        // Convert from GeoJSON format [lng, lat] to Leaflet format [lat, lng]
+        return $this->convertToLeafletFormat($coordinates);
+    }
+
+    /**
+     * Get polygon coordinates - prioritize custom coordinates, then file-based
      */
     public function getPolygonCoordinatesAttribute(): ?array
     {
+        // First try custom coordinates (manually drawn) - already in correct format
+        if ($this->custom_coordinates) {
+            return $this->custom_coordinates;
+        }
+
+        // Fallback to file-based coordinates (from GeoJSON files)
         if (!$this->geojson_file_path) {
             return null;
         }
@@ -65,10 +94,50 @@ class District extends Model
         $geojson = json_decode(File::get($filePath), true);
 
         if (!$geojson || !isset($geojson['geometry'])) {
-            return null;
+            // Handle FeatureCollection format
+            if (isset($geojson['features']) && !empty($geojson['features'])) {
+                $geometry = $geojson['features'][0]['geometry'] ?? null;
+            } else {
+                return null;
+            }
+        } else {
+            $geometry = $geojson['geometry'];
         }
 
-        return $this->extractCoordinatesFromGeometry($geojson['geometry']);
+        return $this->extractCoordinatesFromGeometry($geometry);
+    }
+
+    /**
+     * Get coordinates for editing - prioritize custom over file
+     */
+    public function getEditCoordinatesAttribute(): ?array
+    {
+        // Return custom coordinates first (already in correct format)
+        if ($this->custom_coordinates) {
+            return $this->custom_coordinates;
+        }
+
+        // Return converted file coordinates as fallback
+        return $this->map_coordinates;
+    }
+
+    /**
+     * Convert GeoJSON coordinates to Leaflet format
+     */
+    private function convertToLeafletFormat(array $coordinates): array
+    {
+        $converted = [];
+
+        foreach ($coordinates as $ring) {
+            $convertedRing = [];
+            foreach ($ring as $point) {
+                // Convert [lng, lat] to [lat, lng]
+                $convertedRing[] = [$point[1], $point[0]];
+            }
+            $converted[] = $convertedRing;
+        }
+
+        return $converted;
     }
 
     /**
@@ -251,5 +320,17 @@ class District extends Model
     public function scopeDistricts($query)
     {
         return $query->where('administrative_level', 'district');
+    }
+
+    /**
+     * Get raw coordinate data from database (already in [lat, lng] format)
+     */
+    public function getRawCoordinates(): ?array
+    {
+        $rawData = $this->getRawOriginal('polygon_coordinates');
+        if ($rawData) {
+            return json_decode($rawData, true);
+        }
+        return null;
     }
 }
