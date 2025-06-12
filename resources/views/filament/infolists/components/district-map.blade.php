@@ -281,15 +281,27 @@
         }
 
         #{{ $mapId }} .leaflet-popup {
-            z-index: 15 !important;
+            z-index: 1050 !important;
         }
 
         #{{ $mapId }} .leaflet-popup-pane {
-            z-index: 15 !important;
+            z-index: 1050 !important;
+        }
+
+        #{{ $mapId }} .leaflet-popup-content-wrapper {
+            z-index: 1051 !important;
+        }
+
+        #{{ $mapId }} .leaflet-popup-tip {
+            z-index: 1051 !important;
         }
 
         #{{ $mapId }} .leaflet-tooltip {
-            z-index: 12 !important;
+            z-index: 1040 !important;
+        }
+
+        #{{ $mapId }} .leaflet-tooltip-pane {
+            z-index: 1040 !important;
         }
     </style>
 @endpush
